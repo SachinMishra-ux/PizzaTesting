@@ -39,7 +39,7 @@ def load_ner_model():
 
 @st.cache_resource
 def load_intent_model():
-    MODEL_NAME = "sachin19566/intent-recog"
+    MODEL_NAME = "sachin19566/distilbert_Pizza_Intent"
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     return model, tokenizer
