@@ -44,6 +44,13 @@ def load_intent_model():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     return model, tokenizer
 
+@st.cache_resource
+def load_yes_no_model():
+    MODEL_NAME = "sachin19566/distilbert_Yes_No_Other_Intent"
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    return model, tokenizer
+
 
 id2tag = {0: 'B-Crust',
  1: 'B-Quantity',
@@ -71,9 +78,15 @@ id2tag = {0: 'B-Crust',
 id2order =  { 0 : "PAYMENT",
              1 : "ORDER",
              2 : "CANCEL/MODIFY",
-             3 : "INFO"}
+             3 : "INFO"
+             }
+new_id2order =  { 0 : "No",
+             1 : "Yes",
+             2 : "Other"
+             }
 ner_model, ner_tokenizer = load_ner_model()  
 intent_model, intent_tokenizer = load_intent_model()
+yes_no_intent_model, yes_no_intent_tokenizer = load_yes_no_model()
 
 
 from dataclasses import dataclass
@@ -219,13 +232,19 @@ def tag_sentence(text:str):
 
 
 def get_intent(text: str):
-      inputs = intent_tokenizer(text, truncation=True, return_tensors="pt")
-      outputs = intent_model(**inputs)
-      probs = outputs[0][0].softmax(axis=-1)
-      print(probs)
-      print(outputs[0][0])
-      label = np.argmax(probs.detach().numpy())
-      return label
+      inputs1 = intent_tokenizer(text, truncation=True, return_tensors="pt")
+      inputs2 = yes_no_intent_tokenizer(text, truncation=True, return_tensors="pt")
+      outputs1 = intent_model(**inputs1)
+      outputs2= yes_no_intent_model(**inputs2)
+      probs1 = outputs1[0][0].softmax(axis=-1)
+      probs2 = outputs2[0][0].softmax(axis=-1)
+      print(probs1)
+      print(probs2)
+      print(outputs1[0][0])
+      print(outputs2[0][0])
+      label1 = np.argmax(probs1.detach().numpy())
+      label2 = np.argmax(probs2.detach().numpy())
+      return label1,label2
 
 
 with st.form(key='my_form'):
@@ -243,13 +262,14 @@ if submit_button:
     
     else:
         results=tag_sentence(x1)
-        labels=get_intent(x1)
+        label1,label2 = get_intent(x1)
 
         t, p = tagger(list(results["tokens"]), list(results["tag"]))
         response = order_processor(t,p)
 
         st.markdown("### Tagged Sentence")
-        st.text("Intent : {} | {}".format(id2order[labels], labels))
+        st.text("Intent : {} | {}".format(id2order[label1], label1))
+        st.text("Intent : {} | {}".format(new_id2order[label2], label2))
 
         cs, c1, c2, c3, cLast = st.columns([0.75, 1.5, 1.5, 1.5, 0.75])
         
