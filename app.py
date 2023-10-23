@@ -87,12 +87,12 @@ class Pizza:
     exclude_toppings : List[str]
     crust_type: str
 
-    def __init__(self, Num=None, PT=None, Top=[], Ex_Top=[], CT=None):
+    def __init__(self, Num=None, PT=None, Top=[], Ex_Top=[], Crust=None):
         self.number = Num[0] if Num is not None else None
         self.pizza_type = PT[0] if PT is not None else None
         self.include_toppings = Top
         self.exclude_toppings = Ex_Top
-        self.crust_type = CT[0] if CT is not None else None
+        self.crust_type = Crust[0] if Crust is not None else None
     
     def to_json(self):
         return self.__dict__
