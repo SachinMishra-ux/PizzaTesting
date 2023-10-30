@@ -3,13 +3,11 @@ import pandas as pd
 import numpy as np
 import re
 import json
-import base64
-import uuid
 from collections import defaultdict
-import transformers
 from datasets import Dataset,load_dataset, load_from_disk
 from transformers import AutoTokenizer, AutoModelForTokenClassification, AutoModelForSequenceClassification
-
+import inspect
+from time import time
 
 st.set_page_config(
     page_title="Named Entity Recognition Tagger", page_icon="??"
@@ -31,7 +29,7 @@ st.title("Pizza NER and Intent")
 ######### App-related functions #########
 @st.cache_resource
 def load_ner_model():
-    MODEL_NAME = "Ratansingh648/pizza-ner"
+    MODEL_NAME = "Ratansingh648/pizza-ner2"
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     return model, tokenizer
@@ -71,7 +69,9 @@ id2tag = {0: 'B-Crust',
  16: 'B-Size',
  17: 'B-Top',
  18: 'I-Not',
- 19: 'B-SPLIT'}
+ 19: 'B-SPLIT',
+ 20: 'B-CT',
+ 21: 'I-CT'}
 
 
 
@@ -99,14 +99,23 @@ class Pizza:
     include_toppings : List[str]
     exclude_toppings : List[str]
     crust_type: str
+    size: str
 
-    def __init__(self, Num=None, PT=None, Top=[], Ex_Top=[], Crust=None):
+    def __init__(self, Num=None, PT=None, Size=None, Top=[], Ex_Top=[], Crust=None):
         self.number = Num[0] if Num is not None else None
         self.pizza_type = PT[0] if PT is not None else None
+        self.size = Size[0] if Size is not None else None
         self.include_toppings = Top
         self.exclude_toppings = Ex_Top
         self.crust_type = Crust[0] if Crust is not None else None
     
+    @classmethod
+    def from_dict(cls, env):      
+        return cls(**{
+            k: v for k, v in env.items() 
+            if k in inspect.signature(cls).parameters
+        })
+
     def to_json(self):
         return self.__dict__
 
@@ -115,11 +124,21 @@ class Drink:
     number: str
     drink_type: str
     size: str
+    quantity: str
 
-    def __init__(self, Num=None, DT=None, Size=None):
+    def __init__(self, Num=None, DT=None, Size=None, Quantity=None):
         self.number = Num[0] if Num is not None else None
         self.drink_type = DT[0] if DT is not None else None
         self.size=Size[0] if Size is not None else None
+        self.quantity=Quantity[0] if Quantity is not None else None
+    
+    @classmethod
+    def from_dict(cls, env):      
+        return cls(**{
+            k: v for k, v in env.items() 
+            if k in inspect.signature(cls).parameters
+        })
+
     
     def to_json(self):
         return self.__dict__
@@ -179,8 +198,10 @@ def order_processor(text, tags):
     
     if "PT" in dict(parameter_dict) or "Top" in dict(parameter_dict):
         item = Pizza(**dict(parameter_dict))
-    else:
+    elif "DT" in dict(parameter_dict):
         item = Drink(**dict(parameter_dict))
+    else:
+        item = pd.Series(dict(parameter_dict))
     order.append(item.to_json())
     
     return order
@@ -189,9 +210,6 @@ def order_processor(text, tags):
 def tagger(tokens, predictions):
     token_list = []
     tag_list = []
-
-    print(tokens)
-    print(predictions)
 
     prev_word = None
     for token, prediction in zip(tokens, predictions):
@@ -238,10 +256,6 @@ def get_intent(text: str):
       outputs2= yes_no_intent_model(**inputs2)
       probs1 = outputs1[0][0].softmax(axis=-1)
       probs2 = outputs2[0][0].softmax(axis=-1)
-      print(probs1)
-      print(probs2)
-      print(outputs1[0][0])
-      print(outputs2[0][0])
       label1 = np.argmax(probs1.detach().numpy())
       label2 = np.argmax(probs2.detach().numpy())
       return label1,label2
@@ -261,13 +275,26 @@ if submit_button:
         st.error("Please enter a sentence with at least one word")
     
     else:
+        tick = time()
         results=tag_sentence(x1)
         label1,label2 = get_intent(x1)
+        tock0 = time()
 
         t, p = tagger(list(results["tokens"]), list(results["tag"]))
-        response = order_processor(t,p)
+        order_collection = order_processor(t,p)
+        
+        # Final JSON object
+        response = {}
+        response["items"] = order_collection
+
+        if label2 == 2:
+            response["intent"] = id2order[label1]
+        else:
+            response["intent"] = new_id2order[label2]
+        tock = time()
 
         st.markdown("### Tagged Sentence")
+        st.text("Overall Time : {} | Model Time : {}".format(tock-tick, tock0-tick))
         st.text("Intent : {} | {}".format(id2order[label1], label1))
         st.text("Intent : {} | {}".format(new_id2order[label2], label2))
 
