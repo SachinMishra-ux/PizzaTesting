@@ -164,9 +164,9 @@ def order_processor(text, tags):
             # complete current item and append to order
             if len(parameter_dict) > 0:
                 if "PT" in dict(parameter_dict) or "Top" in dict(parameter_dict):
-                    item = Pizza(**dict(parameter_dict))
+                    item = Pizza.from_dict(dict(parameter_dict))
                 else:
-                    item = Drink(**dict(parameter_dict))
+                    item = Drink.from_dict(dict(parameter_dict))
                 order.append(item.to_json())
             parameter_dict = defaultdict(list)
             # Reset variables
@@ -197,9 +197,9 @@ def order_processor(text, tags):
         parameter_dict[variable].append(value)
     
     if "PT" in dict(parameter_dict) or "Top" in dict(parameter_dict):
-        item = Pizza(**dict(parameter_dict))
+        item = Pizza.from_dict(dict(parameter_dict))
     elif "DT" in dict(parameter_dict):
-        item = Drink(**dict(parameter_dict))
+        item = Drink.from_dict(dict(parameter_dict))
     else:
         item = pd.Series(dict(parameter_dict))
     order.append(item.to_json())
