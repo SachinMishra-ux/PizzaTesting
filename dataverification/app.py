@@ -5,7 +5,7 @@ import pandas as pd
 @st.cache_data
 def load_data():
     # Replace 'your_file.csv' with the actual path to your CSV file
-    df = pd.read_csv('./train_data_fixed.csv', delimiter='|')
+    df = pd.read_csv('sachinmishra-ux/pizzatesting/dataverification/dataverification/train_data_fixed.csv', delimiter='|')
     return df
 
 # Function to generate HTML with colored tags
