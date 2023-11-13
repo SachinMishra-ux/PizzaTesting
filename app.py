@@ -29,7 +29,7 @@ st.title("Pizza NER and Intent")
 ######### App-related functions #########
 @st.cache_resource
 def load_ner_model():
-    MODEL_NAME = "Ratansingh648/pizza-ner2"
+    MODEL_NAME = "Ratansingh648/pizza-ner"
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     return model, tokenizer
