@@ -51,7 +51,7 @@ def main():
 
     # Display the sentences and corresponding tags one below the other for each row
     for index in range(start_index, end_index):
-        st.write(f"{index}: {data['Sentence'][index]}")
+        st.write(f"{index}: {data['Sentence'][index]}|{data['Intent'][index]}")
         colored_tags = generate_colored_tags(data['Tags'][index].split())
         #st.write(f"{data['Tags'][index]}", unsafe_allow_html=True)
         st.write(f"{index}: {colored_tags}", unsafe_allow_html=True)
